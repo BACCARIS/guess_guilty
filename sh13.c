@@ -334,6 +334,7 @@ int main(int argc, char ** argv)
 
 				break;
 			// Message 'D' : le joueur recoit ses trois cartes
+			// format : D [carte0] [carte1] [carte2] 
 			case 'D':
 				// RAJOUTER DU CODE ICI
 
@@ -345,9 +346,15 @@ int main(int argc, char ** argv)
 
 				break;
 			// Message 'V' : le joueur recoit une valeur de tableCartes
+			// format ? : V [IdJoueur] [objet] [valeur] 
+			
 			case 'V':
 				// RAJOUTER DU CODE ICI
 
+				break;
+			// Message 'E' : La partie est finie, réception résultats
+			case 'E':
+			
 				break;
 		}
 		synchro=0;

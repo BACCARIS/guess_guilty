@@ -1,3 +1,23 @@
+/*
+COURS SUR LES THREADS
+pthread
+franckh
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
 #include <stdio.h>
@@ -313,7 +333,11 @@ int main(int argc, char *argv[])
                                 if (nbClients==4)
 				{
 					// On envoie ses cartes au joueur 0, ainsi que la ligne qui lui correspond dans tableCartes
-
+						//Message I
+						
+						//Message D : D deck[0] deck[1] deck[2]
+						
+						
 					// On envoie ses cartes au joueur 1, ainsi que la ligne qui lui correspond dans tableCartes
 
 					// On envoie ses cartes au joueur 2, ainsi que la ligne qui lui correspond dans tableCartes
@@ -321,7 +345,7 @@ int main(int argc, char *argv[])
 					// On envoie ses cartes au joueur 3, ainsi que la ligne qui lui correspond dans tableCartes
 
 					// On envoie enfin un message a tout le monde pour definir qui est le joueur courant=0
-
+						//Message M
                                         fsmServer=1;
 				}
 				break;
@@ -332,12 +356,27 @@ int main(int argc, char *argv[])
 		switch (buffer[0])
 		{
                 	case 'G': // G pour guilty
+                		// test : Gulty bon ?
+                		
+                		// dans tous les cas, envoi message E
+                		
 				// RAJOUTER DU CODE ICI
 				break;
                 	case 'O': // O pour objet
+                	// récupère l'objet
+                	
+                	// pour id joueur allant de 0 à 4
+                		// si idJoueur != idJoueurCourant
+                			// si nombre de l'objet non nul
+                				// envoi message : V idJoueur Objet *
+                			// sinon
+                				// envoi message : V idJoueur Objet 0     	
+                	
 				// RAJOUTER DU CODE ICI
 				break;
 			case 'S': // S pour combien une personne possede d un tel d objets
+					// envoi message : V idJoueur Objet tablecarte[id][objet]
+					
 				// RAJOUTER DU CODE ICI
 				break;
                 	default:
