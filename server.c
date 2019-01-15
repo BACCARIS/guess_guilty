@@ -354,9 +354,11 @@ int main(int argc, char *argv[])
             }
 
 					// On envoie enfin un message a tout le monde pour definir qui est le joueur courant=0
-						//Message M
+						// Message M
+            sprintf(reply,"M %d", joueurCourant);
+            broadcastMessage(reply);
 
-          //FIN
+          // FIN
                                         fsmServer=1;
 				}
 				break;

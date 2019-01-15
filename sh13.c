@@ -289,6 +289,9 @@ int main(int argc, char ** argv)
 						sprintf(sendBuffer,"G %d %d",gId, guiltSel);
 
 					// RAJOUTER DU CODE ICI
+          //DEBUT
+            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+          //Fin
 
 					}
 					else if ((objetSel!=-1) && (joueurSel==-1))
@@ -296,6 +299,7 @@ int main(int argc, char ** argv)
 						sprintf(sendBuffer,"O %d %d",gId, objetSel);
 
 					// RAJOUTER DU CODE ICI
+            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
 
 					}
 					else if ((objetSel!=-1) && (joueurSel!=-1))
@@ -303,6 +307,7 @@ int main(int argc, char ** argv)
 						sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
 
 					// RAJOUTER DU CODE ICI
+            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
 
 					}
 				}
@@ -353,7 +358,11 @@ int main(int argc, char ** argv)
 			// Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton go
 			case 'M':
 				// RAJOUTER DU CODE ICI
-
+        //DEBUT
+        sscanf(gbuffer + 2, "%d", &i);
+        if(i == gId) goEnabled = 1;
+        else goEnabled = 0;
+        //Fin
 				break;
 			// Message 'V' : le joueur recoit une valeur de tableCartes
 			// format ? : V [IdJoueur] [objet] [valeur]
