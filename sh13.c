@@ -29,6 +29,8 @@ int b[3];
 int goEnabled;
 int connectEnabled;
 
+// YOYO
+
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
@@ -369,6 +371,7 @@ int main(int argc, char ** argv)
 
 			case 'V':
 				// RAJOUTER DU CODE ICI
+
 
 				break;
 			// Message 'E' : La partie est finie, réception résultats
