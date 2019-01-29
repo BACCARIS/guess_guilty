@@ -56,18 +56,18 @@ void error(const char *msg)
 
 void melangerDeck()
 {
-        int i;
-        int index1,index2,tmp;
+   	int i;
+    int index1,index2,tmp;
 
-        for (i=0;i<1000;i++)
-        {
-                index1=rand()%13;
-                index2=rand()%13;
+    for (i=0;i<1000;i++)
+    {
+     	index1=rand()%13;
+      	index2=rand()%13;
 
-                tmp=deck[index1];
-                deck[index1]=deck[index2];
-                deck[index2]=tmp;
-        }
+        tmp=deck[index1];
+        deck[index1]=deck[index2];
+        deck[index2]=tmp;
+    }
 }
 
 void createTable()
@@ -156,10 +156,10 @@ void createTable()
 
 void printDeck()
 {
-        int i,j;
+    int i,j;
 
-        for (i=0;i<13;i++)
-                printf("%d %s\n",deck[i],nomcartes[deck[i]]);
+    for (i=0;i<13;i++)
+        printf("%d %s\n",deck[i],nomcartes[deck[i]]);
 
 	for (i=0;i<4;i++)
 	{
@@ -171,22 +171,22 @@ void printDeck()
 
 void printClients()
 {
-        int i;
+    int i;
 
-        for (i=0;i<nbClients;i++)
-                printf("%d: %s %5.5d %s\n",i,tcpClients[i].ipAddress,
-                        tcpClients[i].port,
-                        tcpClients[i].name);
+    for (i=0;i<nbClients;i++)
+        printf("%d: %s %5.5d %s\n",i,tcpClients[i].ipAddress,
+    							tcpClients[i].port,
+    							tcpClients[i].name);
 }
 
 int findClientByName(char *name)
 {
-        int i;
+    int i;
 
-        for (i=0;i<nbClients;i++)
-                if (strcmp(tcpClients[i].name,name)==0)
+    for (i=0;i<nbClients;i++)
+        if (strcmp(tcpClients[i].name,name)==0)
                         return i;
-        return -1;
+    return -1;
 }
 
 void sendMessageToClient(char *clientip,int clientport,char *mess)
@@ -195,7 +195,7 @@ void sendMessageToClient(char *clientip,int clientport,char *mess)
     struct sockaddr_in serv_addr;
     struct hostent *server;
     char buffer[256];
-
+    int temp1, temp2;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     server = gethostbyname(clientip);
@@ -215,8 +215,8 @@ void sendMessageToClient(char *clientip,int clientport,char *mess)
                 exit(1);
         }
 
-        sprintf(buffer,"%s\n",mess);
-        n = write(sockfd,buffer,strlen(buffer));
+    sprintf(buffer,"%s\n",mess);
+    n = write(sockfd,buffer,strlen(buffer));
 
     close(sockfd);
 }
@@ -233,37 +233,42 @@ void broadcastMessage(char *mess)
 
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno;
-     socklen_t clilen;
-     char buffer[256];
-     struct sockaddr_in serv_addr, cli_addr;
-     int n;
-	int i;
+    int sockfd, newsockfd, portno;
+    socklen_t clilen;
+    char buffer[256];
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
+	int i, j;
+    char com;
+    char clientIpAddress[256], clientName[256];
+    int clientPort;
+    int id;
+    char reply[256];
 
-        char com;
-        char clientIpAddress[256], clientName[256];
-        int clientPort;
-        int id;
-        char reply[256];
+    int temp1, temp2, temp3;
+    int joueurPerdant[4] = {0, 0, 0, 0}; // si joueurPerdant[i]=1 c'est que le jouer i n'as plus le droit de jouer
+    int nbPerdant = 0;
 
 
-     if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0)
+    if (argc < 2) {
+        fprintf(stderr,"ERROR, no port provided\n");
+        exit(1);
+    }
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
         error("ERROR opening socket");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     portno = atoi(argv[1]);
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(portno);
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = atoi(argv[1]);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,
               sizeof(serv_addr)) < 0)
               error("ERROR on binding");
-     listen(sockfd,5);
-     clilen = sizeof(cli_addr);
+    listen(sockfd,5);
+    clilen = sizeof(cli_addr);
 
 	printDeck();
 	melangerDeck();
@@ -273,13 +278,13 @@ int main(int argc, char *argv[])
 
 	for (i=0;i<4;i++)
 	{
-        	strcpy(tcpClients[i].ipAddress,"localhost");
-        	tcpClients[i].port=-1;
-        	strcpy(tcpClients[i].name,"-");
+       	strcpy(tcpClients[i].ipAddress,"localhost");
+        tcpClients[i].port=-1;
+        strcpy(tcpClients[i].name,"-");
 	}
 
-     while (1)
-     {
+    while (1)
+    {
      	newsockfd = accept(sockfd,
                  (struct sockaddr *) &cli_addr,
                  &clilen);
@@ -299,105 +304,162 @@ int main(int argc, char *argv[])
         	switch (buffer[0])
         	{
                 	case 'C':
-                        	sscanf(buffer,"%c %s %d %s", &com, clientIpAddress, &clientPort, clientName);
-                        	printf("COM=%c ipAddress=%s port=%d name=%s\n",com, clientIpAddress, clientPort, clientName);
+                       	sscanf(buffer,"%c %s %d %s", &com, clientIpAddress, &clientPort, clientName);
+                        printf("COM=%c ipAddress=%s port=%d name=%s\n",com, clientIpAddress, clientPort, clientName);
 
-                          //DEBUT
-                          // test : ce client existe-t-il déjà ?
-                          /*TODO
-                          for(int i = 0: i < nbClients; i++)
-                          {
+                        // Du code ajoute
 
-                          }
-                          */
-                          //FIN
+                        // fsmServer==0 alors j'attends les connexions de tous les joueurs
+                        strcpy(tcpClients[nbClients].ipAddress,clientIpAddress);
+                        tcpClients[nbClients].port=clientPort;
+                        strcpy(tcpClients[nbClients].name,clientName);
+                        nbClients++;
 
-                        	// fsmServer==0 alors j'attends les connexions de tous les joueurs
-                                strcpy(tcpClients[nbClients].ipAddress,clientIpAddress);
-                                tcpClients[nbClients].port=clientPort;
-                                strcpy(tcpClients[nbClients].name,clientName);
-                                nbClients++;
+                        printClients();
 
-                                printClients();
+				   		// rechercher l'id du joueur qui vient de se connecter
 
-				// rechercher l'id du joueur qui vient de se connecter
+                        id=findClientByName(clientName);
+                        printf("id=%d\n",id);
 
-                                id=findClientByName(clientName);
-                                printf("id=%d\n",id);
+						// lui envoyer un message personnel pour lui communiquer son id
 
-				// lui envoyer un message personnel pour lui communiquer son id
-
-                                sprintf(reply,"I %d",id);
-                                sendMessageToClient(tcpClients[id].ipAddress,
+                        sprintf(reply,"I %d",id);
+                        sendMessageToClient(tcpClients[id].ipAddress,
                                        tcpClients[id].port,
                                        reply);
 
-				// Envoyer un message broadcast pour communiquer a tout le monde la liste des joueurs actuellement
-				// connectes
+				        // Envoyer un message broadcast pour communiquer a tout le monde la liste des joueurs actuellement
+				        // connectes
 
-                                sprintf(reply,"L %s %s %s %s", tcpClients[0].name, tcpClients[1].name, tcpClients[2].name, tcpClients[3].name);
-                                broadcastMessage(reply);
+                        sprintf(reply,"L %s %s %s %s", tcpClients[0].name, tcpClients[1].name, tcpClients[2].name, tcpClients[3].name);
+                        broadcastMessage(reply);
 
-				// Si le nombre de joueurs atteint 4, alors on peut lancer le jeu
+				        // Si le nombre de joueurs atteint 4, alors on peut lancer le jeu
 
-                                if (nbClients==4)
-				{
-          // DEBUT TODO
-	         //Envoi à chacun ses cartes
-            for(int i = 0; i < 4; i++)
-            {
-              sprintf(reply,"D %d %d %d", deck[3*i], deck[3*i + 1], deck[3*i + 2]);
-              sendMessageToClient(tcpClients[i].ipAddress,
-                     tcpClients[i].port,
-                     reply);
+                        if (nbClients==4)
+						{
+	         				//Envoi à chacun ses cartes
+            				for(i = 0; i < 4; i++)
+           		 			{
+              					sprintf(reply,"D %d %d %d", deck[3*i], deck[3*i + 1], deck[3*i + 2]);
+              					sendMessageToClient(tcpClients[i].ipAddress,
+                     								tcpClients[i].port,
+                     								reply);
 
-            }
+              					for(j = 0; j < 8; j++)
+              					{
+                				sprintf(reply,"V %d %d %d", i, j, tableCartes[i][j]);
+                				sendMessageToClient(tcpClients[i].ipAddress,
+                       								tcpClients[i].port,
+                       								reply);
+              					}
+            				}
 
-					// On envoie enfin un message a tout le monde pour definir qui est le joueur courant=0
-						// Message M
-            sprintf(reply,"M %d", joueurCourant);
-            broadcastMessage(reply);
-
-          // FIN
-                                        fsmServer=1;
-				}
-				break;
-                }
-	}
-	else if (fsmServer==1)
-	{
-		switch (buffer[0])
+							// On envoie enfin un message a tout le monde pour definir qui est le joueur courant=0
+							// Message M
+            				sprintf(reply,"M %d", joueurCourant);
+            				broadcastMessage(reply);
+                             
+                            fsmServer=1;
+						}
+						break;
+                	}
+		}
+		else if (fsmServer==1)
 		{
-                	case 'G': // G pour guilty
-                		// test : Gulty bon ?
+			switch (buffer[0])
+			{
+                	case 'G': 
+                	// G pour guilty
+                	// test : Gulty bon ?
 
-                		// dans tous les cas, envoi message E
+                    sscanf(buffer + 2, "%d %d", &temp1, &temp2);
+                    // Est-ce bien le joueur courant qui parle ?
+                    if(temp1 == joueurCourant)
+                    {
+                      // Envoi message de fin de partie
+                      if(temp2 == deck[12]) // Joueur gagne et on perd
+                      {
+                        sprintf(reply,"W %d", joueurCourant);
+                        broadcastMessage(reply);
+                        return 0; // jeu fini
+                      }
+                      else // Joueur perd, si'il reste encore de joueur non perdant on continue, sinon on sort
+                      {
+                      	joueurPerdant[joueurCourant] = 1;
+                        sprintf(reply,"X %d", joueurCourant);
+                        broadcastMessage(reply);
+                        nbPerdant ++;
+                        if(nbPerdant >=3 ){
+                        	sprintf(reply, "W %d", joueurCourant);
+                        	broadcastMessage(reply);
+                        	return 0; // jeu fini
+                        }
+                      }
 
-				// RAJOUTER DU CODE ICI
-				break;
-                	case 'O': // O pour objet
+                    }
+
+						break;
+                	case 'O': 
+                	// O pour objet
                 	// récupère l'objet
 
-                	// pour id joueur allant de 0 à 4
-                		// si idJoueur != idJoueurCourant
-                			// si nombre de l'objet non nul
-                				// envoi message : V idJoueur Objet *
-                			// sinon
-                				// envoi message : V idJoueur Objet 0
+                    sscanf(buffer + 2, "%d %d", &temp1, &temp2);
 
-				// RAJOUTER DU CODE ICI
-				break;
-			case 'S': // S pour combien une personne possede d un tel d objets
-					// envoi message : V idJoueur Objet tablecarte[id][objet]
+                    if(temp1 == joueurCourant) {
+                        for(i = 0; i < 4; i++)
+                          	{
+                            if(i == temp1) continue;
 
-				// RAJOUTER DU CODE ICI
-				break;
-                	default:
-                        	break;
-		}
+                            if(tableCartes[i][temp2] != 0)
+                            {
+                              sprintf(reply,"V %d %d 100", i, temp2);
+                              sendMessageToClient(tcpClients[temp1].ipAddress,
+                                     tcpClients[temp1].port,
+                                     reply);
+                            }
+                            else
+                            {
+                              sprintf(reply,"V %d %d 0", i, temp2);
+                              sendMessageToClient(tcpClients[temp1].ipAddress,
+                                     tcpClients[temp1].port,
+                                     reply);
+                            }
+                          }
+                        }
+       
+                    joueurCourant ++;
+                    if(joueurCourant == 4) joueurCourant = 0;
+                    sprintf(reply,"M %d", joueurCourant);
+                    broadcastMessage(reply);
+				    break;
+				case 'S':
+				// S pour combien une personne possede d un tel d objets
+				// envoi message : V idJoueur Objet tablecarte[id][objet]
+
+          			sscanf(buffer + 2, "%d %d %d", &temp1, &temp2, &temp3);
+          			if(joueurCourant == temp1)
+          			{
+            			sprintf(reply, "V %d %d %d", temp2, temp3, tableCartes[temp2][temp3]);
+            			sendMessageToClient(tcpClients[joueurCourant].ipAddress,
+                   							tcpClients[joueurCourant].port,
+                   							reply);
+          			}
+          			broadcastMessage(reply);
+					break;
+                default:
+                    break;
+			}
+			// ceci permet de passer au joueur d'aprés qui n'a encore pas perdu
+			do{
+				joueurCourant++;
+			}while((joueurPerdant[joueurCourant] == 1));
+			sprintf(reply,"M %d", joueurCourant);
+          	broadcastMessage(reply);
         }
      	close(newsockfd);
-     }
-     close(sockfd);
-     return 0;
+    }
+    close(sockfd);
+    return 0;
 }

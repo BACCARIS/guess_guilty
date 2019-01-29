@@ -29,8 +29,6 @@ int b[3];
 int goEnabled;
 int connectEnabled;
 
-// YOYO
-
 char *nbobjets[]={"5","5","5","5","4","3","3","3"};
 char *nbnoms[]={"Sebastian Moran", "irene Adler", "inspector Lestrade",
   "inspector Gregson", "inspector Baynes", "inspector Bradstreet",
@@ -41,56 +39,55 @@ volatile int synchro;
 
 void *fn_serveur_tcp(void *arg)
 {
-        int sockfd, newsockfd, portno;
-        socklen_t clilen;
-        struct sockaddr_in serv_addr, cli_addr;
-        int n;
+    int sockfd, newsockfd, portno;
+    socklen_t clilen;
+    struct sockaddr_in serv_addr, cli_addr;
+    int n;
 
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd<0)
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd<0)
+    {
+        printf("sockfd error\n");
+        exit(1);
+    }
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = gClientPort;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    {
+        printf("bind error\n");
+        exit(1);
+    }
+
+    listen(sockfd,5);
+    clilen = sizeof(cli_addr);
+    while (1)
+    {
+        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        if (newsockfd < 0)
         {
-                printf("sockfd error\n");
-                exit(1);
+            printf("accept error\n");
+            exit(1);
         }
 
-        bzero((char *) &serv_addr, sizeof(serv_addr));
-        portno = gClientPort;
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(portno);
-       if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+        bzero(gbuffer,256);
+        n = read(newsockfd,gbuffer,255);
+        if (n < 0)
         {
-                printf("bind error\n");
-                exit(1);
+            printf("read error\n");
+            exit(1);
         }
+        //printf("%s",gbuffer);
 
-        listen(sockfd,5);
-        clilen = sizeof(cli_addr);
-        while (1)
-        {
-                newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-                if (newsockfd < 0)
-                {
-                        printf("accept error\n");
-                        exit(1);
-                }
+        pthread_mutex_lock( &mutex );
+        synchro=1;
+        pthread_mutex_unlock( &mutex );
 
-                bzero(gbuffer,256);
-                n = read(newsockfd,gbuffer,255);
-                if (n < 0)
-                {
-                        printf("read error\n");
-                        exit(1);
-                }
-                //printf("%s",gbuffer);
-
-                pthread_mutex_lock( &mutex );
-                synchro=1;
-                pthread_mutex_unlock( &mutex );
-
-                while (synchro);
-
-     }
+        while (synchro);
+    }
 }
 
 void sendMessageToServer(char *ipAddress, int portno, char *mess)
@@ -114,13 +111,13 @@ void sendMessageToServer(char *ipAddress, int portno, char *mess)
          server->h_length);
     serv_addr.sin_port = htons(portno);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-        {
-                printf("ERROR connecting\n");
-                exit(1);
-        }
+    {
+        printf("ERROR connecting\n");
+        exit(1);
+    }
 
-        sprintf(sendbuffer,"%s\n",mess);
-        n = write(sockfd,sendbuffer,strlen(sendbuffer));
+    sprintf(sendbuffer,"%s\n",mess);
+    n = write(sockfd,sendbuffer,strlen(sendbuffer));
 
     close(sockfd);
 }
@@ -142,7 +139,6 @@ int main(int argc, char ** argv)
 {
 	int ret;
 	int i,j;
-
     int quit = 0;
     SDL_Event event;
 	int mx,my;
@@ -150,23 +146,26 @@ int main(int argc, char ** argv)
 	char lname[256];
 	int id;
 
-        if (argc<6)
-        {
-                printf("<app> <Main server ip address> <Main server port> <Client ip address> <Client port> <player name>\n");
-                exit(1);
-        }
+	// des varibales temporaires pour stocker differentes info recu ou a envoyer
+	int temp1, temp2, temp3;
 
-        strcpy(gServerIpAddress,argv[1]);
-        gServerPort=atoi(argv[2]);
-        strcpy(gClientIpAddress,argv[3]);
-        gClientPort=atoi(argv[4]);
-        strcpy(gName,argv[5]);
+    if (argc<6)
+    {
+        printf("<app> <Main server ip address> <Main server port> <Client ip address> <Client port> <player name>\n");
+        exit(1);
+    }
+
+    strcpy(gServerIpAddress,argv[1]);
+    gServerPort=atoi(argv[2]);
+    strcpy(gClientIpAddress,argv[3]);
+    gClientPort=atoi(argv[4]);
+    strcpy(gName,argv[5]);
 
     SDL_Init(SDL_INIT_VIDEO);
 	TTF_Init();
 
     SDL_Window * window = SDL_CreateWindow("SDL2 SH13",
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1024, 768, 0);
+    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1024, 768, 0);
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
 
@@ -249,143 +248,142 @@ int main(int argc, char ** argv)
             		case SDL_QUIT:
                 		quit = 1;
                 		break;
-			case  SDL_MOUSEBUTTONDOWN:
-				SDL_GetMouseState( &mx, &my );
-				//printf("mx=%d my=%d\n",mx,my);
-				if ((mx<200) && (my<50) && (connectEnabled==1))
-				{
-					sprintf(sendBuffer,"C %s %d %s",gClientIpAddress,gClientPort,gName);
+					case  SDL_MOUSEBUTTONDOWN:
+						SDL_GetMouseState( &mx, &my );
+						//printf("mx=%d my=%d\n",mx,my);
+						if ((mx<200) && (my<50) && (connectEnabled==1))
+						{
+							sprintf(sendBuffer,"C %s %d %s",gClientIpAddress,gClientPort,gName);
+          					// Du code rajoute : On envoie sendBuffer au server
+          					sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+							connectEnabled=0;
+						}
+						else if ((mx>=0) && (mx<200) && (my>=90) && (my<330))
+						{
+							joueurSel=(my-90)/60;
+							guiltSel=-1;
+						}
+						else if ((mx>=200) && (mx<680) && (my>=0) && (my<90))
+						{
+							objetSel=(mx-200)/60;
+							guiltSel=-1;
+						}
+						else if ((mx>=100) && (mx<250) && (my>=350) && (my<740))
+						{
+							joueurSel=-1;
+							objetSel=-1;
+							guiltSel=(my-350)/30;
+						}
+						else if ((mx>=250) && (mx<300) && (my>=350) && (my<740))
+						{
+							int ind=(my-350)/30;
+							guiltGuess[ind]=1-guiltGuess[ind];
+						}
+						else if ((mx>=500) && (mx<700) && (my>=350) && (my<450) && (goEnabled==1))
+						{
+							printf("go! joueur=%d objet=%d guilt=%d\n",joueurSel, objetSel, guiltSel);
+								if (guiltSel!=-1)
+								{
+									sprintf(sendBuffer,"G %d %d",gId, guiltSel);
 
-					// RAJOUTER DU CODE ICI
-          // On envoie sendBuffer au server
-          sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
-          // Fin
-					connectEnabled=0;
-				}
-				else if ((mx>=0) && (mx<200) && (my>=90) && (my<330))
-				{
-					joueurSel=(my-90)/60;
-					guiltSel=-1;
-				}
-				else if ((mx>=200) && (mx<680) && (my>=0) && (my<90))
-				{
-					objetSel=(mx-200)/60;
-					guiltSel=-1;
-				}
-				else if ((mx>=100) && (mx<250) && (my>=350) && (my<740))
-				{
-					joueurSel=-1;
-					objetSel=-1;
-					guiltSel=(my-350)/30;
-				}
-				else if ((mx>=250) && (mx<300) && (my>=350) && (my<740))
-				{
-					int ind=(my-350)/30;
-					guiltGuess[ind]=1-guiltGuess[ind];
-				}
-				else if ((mx>=500) && (mx<700) && (my>=350) && (my<450) && (goEnabled==1))
-				{
-					printf("go! joueur=%d objet=%d guilt=%d\n",joueurSel, objetSel, guiltSel);
-					if (guiltSel!=-1)
-					{
-						sprintf(sendBuffer,"G %d %d",gId, guiltSel);
-
-					// RAJOUTER DU CODE ICI
-          //DEBUT
-            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
-          //Fin
-
-					}
-					else if ((objetSel!=-1) && (joueurSel==-1))
-					{
-						sprintf(sendBuffer,"O %d %d",gId, objetSel);
-
-					// RAJOUTER DU CODE ICI
-            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
-
-					}
-					else if ((objetSel!=-1) && (joueurSel!=-1))
-					{
-						sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
-
-					// RAJOUTER DU CODE ICI
-            sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
-
-					}
-				}
-				else
-				{
-					joueurSel=-1;
-					objetSel=-1;
-					guiltSel=-1;
-				}
-				break;
-			case  SDL_MOUSEMOTION:
-				SDL_GetMouseState( &mx, &my );
-				break;
+									// du code rajoute
+            						sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+           							goEnabled = 0;
+								}
+								else if ((objetSel!=-1) && (joueurSel==-1))
+								{
+									sprintf(sendBuffer,"O %d %d",gId, objetSel);
+									// du code rajoute
+            						sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+            						goEnabled = 0;
+								}
+								else if ((objetSel!=-1) && (joueurSel!=-1))
+								{
+									sprintf(sendBuffer,"S %d %d %d",gId, joueurSel,objetSel);
+									// Du code rajoute
+            						sendMessageToServer(gServerIpAddress, gServerPort, sendBuffer);
+            						goEnabled = 0;
+								}
+						}
+						else
+						{
+							joueurSel=-1;
+							objetSel=-1;
+							guiltSel=-1;
+						}
+						break;
+					case  SDL_MOUSEMOTION:
+						SDL_GetMouseState( &mx, &my );
+						break;
         	}
 	}
 
-        if (synchro==1)
-        {
-                pthread_mutex_lock( &mutex );
-                printf("consomme |%s|\n",gbuffer);
+    if (synchro==1)
+    {
+   	    pthread_mutex_lock( &mutex );
+        printf("consomme |%s|\n",gbuffer);
 		switch (gbuffer[0])
 		{
 			// Message 'I' : le joueur recoit son Id
 			case 'I':
-				// RAJOUTER DU CODE ICI
-        //Debut
-        sscanf(gbuffer + 2, "%d", &gId);
-        //Fin
-
+				// du code rajoute 
+        		sscanf(gbuffer + 2, "%d", &gId);
 				break;
+
 			// Message 'L' : le joueur recoit la liste des joueurs
 			case 'L':
-				// RAJOUTER DU CODE ICI
-        //DEBUT
-        sscanf(gbuffer + 2,"%s %s %s %s", gNames[0], gNames[1], gNames[2], gNames[3]);
-        //Fin
-
+				// Du code rajoute
+        		sscanf(gbuffer + 2,"%s %s %s %s", gNames[0], gNames[1], gNames[2], gNames[3]);
 				break;
+
 			// Message 'D' : le joueur recoit ses trois cartes
 			// format : D [carte0] [carte1] [carte2]
 			case 'D':
-				// R AJOUTER DU CODE ICI
-        //DEBUT
-        sscanf(gbuffer + 2,"%d %d %d", &b[0], &b[1], &b[2]);
-        //Fin
+				// Du code rajoute
+        		sscanf(gbuffer + 2,"%d %d %d", &b[0], &b[1], &b[2]);
 				break;
+
 			// Message 'M' : le joueur recoit le n° du joueur courant
 			// Cela permet d'affecter goEnabled pour autoriser l'affichage du bouton go
 			case 'M':
-				// RAJOUTER DU CODE ICI
-        //DEBUT
-        sscanf(gbuffer + 2, "%d", &i);
-        if(i == gId) goEnabled = 1;
-        else goEnabled = 0;
-        //Fin
+				//Du code rajoute
+        		sscanf(gbuffer + 2, "%d", &i);
+        		if(i == gId) goEnabled = 1;
+        		else goEnabled = 0;
 				break;
+
 			// Message 'V' : le joueur recoit une valeur de tableCartes
 			// format ? : V [IdJoueur] [objet] [valeur]
-
 			case 'V':
-				// RAJOUTER DU CODE ICI
-
-
+				// Du code rajoute
+          		sscanf(gbuffer + 2, "%d %d %d", &temp1, &temp2, &temp3);
+          		tableCartes[temp1][temp2] = temp3;
 				break;
-			// Message 'E' : La partie est finie, réception résultats
-			case 'E':
 
+			// Message 'W' : La partie est finie avant une victoire
+			case 'W':
+      		// du code rajoute
+      			sscanf(gbuffer + 2, "%d", &i);
+      			if(i == gId ) 
+      			{
+        			printf("Victoire par le joueur %d \n", i);
+      			}
+      			//exit(0);
 				break;
+			case 'X':
+				sscanf(gbuffer + 2, "%d", &i);
+				if(gId == i){
+					printf("Défaite par le joueur %d\n", i);
+
+				}
 		}
 		synchro=0;
-                pthread_mutex_unlock( &mutex );
-        }
+    	pthread_mutex_unlock( &mutex );
+    }
 
-        SDL_Rect dstrect_grille = { 512-250, 10, 500, 350 };
-        SDL_Rect dstrect_image = { 0, 0, 500, 330 };
-        SDL_Rect dstrect_image1 = { 0, 340, 250, 330/2 };
+    SDL_Rect dstrect_grille = { 512-250, 10, 500, 350 };
+    SDL_Rect dstrect_image = { 0, 0, 500, 330 };
+    SDL_Rect dstrect_image1 = { 0, 340, 250, 330/2 };
 
 	SDL_SetRenderDrawColor(renderer, 255, 230, 230, 230);
 	SDL_Rect rect = {0, 0, 1024, 768};
@@ -431,38 +429,38 @@ int main(int argc, char ** argv)
         SDL_RenderCopy(renderer, texture_objet[7], NULL, &dstrect_crane);
 	}
 
-        SDL_Color col1 = {0, 0, 0};
-        for (i=0;i<8;i++)
-        {
-                SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, nbobjets[i], col1);
-                SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    SDL_Color col1 = {0, 0, 0};
+    for (i=0;i<8;i++)
+    {
+        SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, nbobjets[i], col1);
+        SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
-                SDL_Rect Message_rect; //create a rect
-                Message_rect.x = 230+i*60;  //controls the rect's x coordinate
-                Message_rect.y = 50; // controls the rect's y coordinte
-                Message_rect.w = surfaceMessage->w; // controls the width of the rect
-                Message_rect.h = surfaceMessage->h; // controls the height of the rect
+        SDL_Rect Message_rect; //create a rect
+        Message_rect.x = 230+i*60;  //controls the rect's x coordinate
+        Message_rect.y = 50; // controls the rect's y coordinte
+        Message_rect.w = surfaceMessage->w; // controls the width of the rect
+        Message_rect.h = surfaceMessage->h; // controls the height of the rect
 
-                SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
-                SDL_DestroyTexture(Message);
-                SDL_FreeSurface(surfaceMessage);
-        }
+        SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+        SDL_DestroyTexture(Message);
+        SDL_FreeSurface(surfaceMessage);
+    }
 
-        for (i=0;i<13;i++)
-        {
-                SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, nbnoms[i], col1);
-                SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    for (i=0;i<13;i++)
+    {
+        SDL_Surface* surfaceMessage = TTF_RenderText_Solid(Sans, nbnoms[i], col1);
+        SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
 
-                SDL_Rect Message_rect;
-                Message_rect.x = 105;
-                Message_rect.y = 350+i*30;
-                Message_rect.w = surfaceMessage->w;
-                Message_rect.h = surfaceMessage->h;
+        SDL_Rect Message_rect;
+        Message_rect.x = 105;
+        Message_rect.y = 350+i*30;
+        Message_rect.w = surfaceMessage->w;
+        Message_rect.h = surfaceMessage->h;
 
-                SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
-                SDL_DestroyTexture(Message);
-                SDL_FreeSurface(surfaceMessage);
-        }
+        SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+        SDL_DestroyTexture(Message);
+        SDL_FreeSurface(surfaceMessage);
+    }
 
 	for (i=0;i<4;i++)
         	for (j=0;j<8;j++)
