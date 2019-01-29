@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
 			}
 			// ceci permet de passer au joueur d'aprés qui n'a encore pas perdu
 			do{
-				joueurCourant++;
+				joueurCourant = (joueurCourant + 1)%4;
 			}while((joueurPerdant[joueurCourant] == 1));
 			sprintf(reply,"M %d", joueurCourant);
           	broadcastMessage(reply);
